@@ -27,7 +27,7 @@ const Auth = () => {
 
         try {
             if (isLogin) {
-                const res = await axios.post('http://localhost:3001/api/auth/login', {
+                const res = await axios.post(`${import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}/api/auth/login`, {
                     username: formData.username,
                     password: formData.password
                 });
@@ -38,7 +38,7 @@ const Auth = () => {
                     setError('You must accept the Terms and Conditions');
                     return;
                 }
-                await axios.post('http://localhost:3001/api/auth/signup', formData);
+                await axios.post(`${import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}/api/auth/signup`, formData);
                 setIsLogin(true);
                 setError('Account created! Please log in.');
                 setFormData({ name: '', username: '', password: '', termsAccepted: false });
