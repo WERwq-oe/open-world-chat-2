@@ -1,0 +1,9 @@
+{
+    "name": "open-world-chat-root",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "install": "cd client && npm install",
+        "build": "cd client && npm run build"
+    }
+}
