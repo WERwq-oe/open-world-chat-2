@@ -8,9 +8,16 @@ const USERS_FILE = path.join(__dirname, 'users.json');
 // Helper to read users
 const getUsers = () => {
     try {
+        if (!fs.existsSync(USERS_FILE)) {
+            console.log('Users file does not exist, returning empty array.');
+            return [];
+        }
         const data = fs.readFileSync(USERS_FILE, 'utf8');
-        return JSON.parse(data);
+        const users = JSON.parse(data);
+        console.log(`Loaded ${users.length} users from ${USERS_FILE}`);
+        return users;
     } catch (err) {
+        console.error('Error reading users file:', err);
         return [];
     }
 };

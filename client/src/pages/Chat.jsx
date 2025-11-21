@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import '../styles/main.css';
 
-const socket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:3001');
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const socket = io(SERVER_URL);
 
 const Chat = () => {
     const [messages, setMessages] = useState([]);
@@ -48,7 +50,7 @@ const Chat = () => {
                 username: user.username,
                 message: input,
                 type: 'text',
-                time: new Date().toLocaleTimeString()
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             socket.emit('send_message', messageData);
             setInput('');
@@ -63,7 +65,7 @@ const Chat = () => {
         formData.append('file', file);
 
         try {
-            const res = await axios.post('http://localhost:3001/api/upload', formData, {
+            const res = await axios.post(`${SERVER_URL}/api/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -75,7 +77,7 @@ const Chat = () => {
                 message: fileName,
                 type: isImage ? 'image' : 'file',
                 fileUrl: fileUrl,
-                time: new Date().toLocaleTimeString()
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             socket.emit('send_message', messageData);
         } catch (err) {
@@ -90,47 +92,83 @@ const Chat = () => {
     };
 
     return (
-        <div className="container">
-            <div className="glass-panel chat-container">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <h2>Global Chat</h2>
-                    <button onClick={handleLogout} style={{ width: 'auto', padding: '8px 16px', marginTop: 0, background: 'rgba(255,255,255,0.1)' }}>Logout</button>
+        <div className="chat-layout animate-fade-in">
+            <div className="glass-panel chat-window">
+                <div className="chat-header">
+                    <div>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Global Chat</h2>
+                        <span style={{ color: 'var(--primary-color)', fontSize: '0.8rem' }}>● Online</span>
+                    </div>
+                    <button onClick={handleLogout} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem', background: 'rgba(255,255,255,0.1)' }}>
+                        Logout
+                    </button>
                 </div>
 
-                <div className="messages">
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`message ${msg.username === user?.username ? 'own' : ''}`} style={msg.type === 'system' ? { alignSelf: 'center', background: 'transparent', opacity: 0.6, fontSize: '0.8rem' } : {}}>
-                            {msg.type !== 'system' && <div className="message-header">{msg.username} • {msg.time}</div>}
+                <div className="messages-area">
+                    {messages.map((msg, index) => {
+                        const isOwn = msg.username === user?.username;
+                        const isSystem = msg.type === 'system';
 
-                            {msg.type === 'text' && <div>{msg.message}</div>}
-                            {msg.type === 'image' && <img src={msg.fileUrl} alt="uploaded" />}
-                            {msg.type === 'file' && (
-                                <div>
-                                    📄 <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'underline' }}>{msg.message}</a>
+                        if (isSystem) {
+                            return (
+                                <div key={index} className="system-message">
+                                    {msg.message}
                                 </div>
-                            )}
-                            {msg.type === 'system' && <div>{msg.message}</div>}
-                        </div>
-                    ))}
+                            );
+                        }
+
+                        return (
+                            <div key={index} className={`message-bubble ${isOwn ? 'message-own' : 'message-other'}`}>
+                                {!isOwn && <span className="message-info">{msg.username} • {msg.time}</span>}
+
+                                {msg.type === 'text' && <div>{msg.message}</div>}
+
+                                {msg.type === 'image' && (
+                                    <img
+                                        src={msg.fileUrl}
+                                        alt="uploaded"
+                                        style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '5px' }}
+                                    />
+                                )}
+
+                                {msg.type === 'file' && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '1.5rem' }}>📄</span>
+                                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                                            {msg.message}
+                                        </a>
+                                    </div>
+                                )}
+
+                                {isOwn && <span className="message-info" style={{ textAlign: 'right', marginTop: '4px', color: 'rgba(255,255,255,0.7)' }}>{msg.time}</span>}
+                            </div>
+                        );
+                    })}
                     <div ref={messagesEndRef} />
                 </div>
 
-                <div className="chat-input">
+                <div className="input-area">
                     <input
                         type="file"
                         ref={fileInputRef}
                         style={{ display: 'none' }}
                         onChange={handleFileUpload}
                     />
-                    <button onClick={() => fileInputRef.current.click()} style={{ background: 'rgba(255,255,255,0.1)', fontSize: '1.2rem', padding: '0 15px' }}>📎</button>
+                    <button className="icon-btn" onClick={() => fileInputRef.current.click()} title="Attach File">
+                        📎
+                    </button>
                     <input
                         type="text"
+                        className="glass-input"
                         placeholder="Type a message..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                        style={{ borderRadius: '25px' }}
                     />
-                    <button onClick={sendMessage}>Send</button>
+                    <button className="icon-btn" onClick={sendMessage} style={{ background: 'var(--primary-color)' }}>
+                        ➤
+                    </button>
                 </div>
             </div>
         </div>
